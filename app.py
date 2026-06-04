@@ -7,6 +7,7 @@ import time as time_module
 import yfinance as yf
 import requests
 import os
+import pytz
 
 st.set_page_config(
     page_title="Tendência Macro | WDO & WIN",
@@ -212,7 +213,7 @@ def carregar_historico():
     try:
         if os.path.exists(HISTORICO_FILE):
             df = pd.read_csv(HISTORICO_FILE)
-            hoje = datetime.now().strftime("%Y-%m-%d")
+            hoje = datetime.now(pytz.timezone("America/Sao_Paulo")).strftime("%Y-%m-%d")
             if "data" in df.columns:
                 df = df[df["data"] == hoje]
             return df.to_dict("records")
@@ -399,7 +400,7 @@ with col_ctrl2:
 
 with col_ctrl3:
     st.markdown("<br>", unsafe_allow_html=True)
-    auto_refresh = st.toggle("Auto (60s)", value=False)
+    auto_refresh = st.toggle("Auto (5min)", value=False)
 
 # ─────────────────────────────────────────
 # DI FUTURO — INPUT MANUAL EM DESTAQUE
@@ -437,11 +438,12 @@ st.markdown("<hr style='border-color:#1a1a2a; margin: 1rem 0'>", unsafe_allow_ht
 with st.spinner("Atualizando dados de mercado..."):
     dados = buscar_dados_mercado()
     scores = calcular_scores(dados, st.session_state.di_estado)
-    st.session_state.ultimo_update = datetime.now().strftime("%H:%M:%S")
+    BR_TZ = pytz.timezone("America/Sao_Paulo")
+    st.session_state.ultimo_update = datetime.now(BR_TZ).strftime("%H:%M:%S")
 
     # Registrar no histórico automaticamente
     entrada = {
-        "hora": datetime.now().strftime("%H:%M"),
+        "hora": datetime.now(pytz.timezone("America/Sao_Paulo")).strftime("%H:%M"),
         "pessimismo_wdo": scores["WDO"]["pessimismo"],
         "otimismo_wdo":   scores["WDO"]["otimismo"],
         "neutro_wdo":     scores["WDO"]["neutro"],
@@ -452,7 +454,7 @@ with st.spinner("Atualizando dados de mercado..."):
         "spread_win":     scores["WIN"]["spread"],
     }
     # Evita duplicatas no mesmo minuto
-    entrada["data"] = datetime.now().strftime("%Y-%m-%d")
+    entrada["data"] = datetime.now(pytz.timezone("America/Sao_Paulo")).strftime("%Y-%m-%d")
     if not st.session_state.historico or st.session_state.historico[-1]["hora"] != entrada["hora"]:
         st.session_state.historico.append(entrada)
         if len(st.session_state.historico) > 120:
@@ -655,5 +657,5 @@ st.markdown(f"""
 # AUTO REFRESH
 # ─────────────────────────────────────────
 if auto_refresh:
-    time_module.sleep(60)
+    time_module.sleep(300)
     st.rerun()
