@@ -6,6 +6,7 @@ from datetime import datetime, time
 import time as time_module
 import yfinance as yf
 import requests
+import os
 
 st.set_page_config(
     page_title="Tendência Macro | WDO & WIN",
@@ -203,10 +204,35 @@ div[data-testid="stSlider"] label {
 
 
 # ─────────────────────────────────────────
+# PERSISTÊNCIA DO HISTÓRICO
+# ─────────────────────────────────────────
+HISTORICO_FILE = "/tmp/historico_macro.csv"
+
+def carregar_historico():
+    try:
+        if os.path.exists(HISTORICO_FILE):
+            df = pd.read_csv(HISTORICO_FILE)
+            hoje = datetime.now().strftime("%Y-%m-%d")
+            if "data" in df.columns:
+                df = df[df["data"] == hoje]
+            return df.to_dict("records")
+    except:
+        pass
+    return []
+
+def salvar_historico(historico):
+    try:
+        if historico:
+            df = pd.DataFrame(historico)
+            df.to_csv(HISTORICO_FILE, index=False)
+    except:
+        pass
+
+# ─────────────────────────────────────────
 # ESTADO DA SESSÃO
 # ─────────────────────────────────────────
 if "historico" not in st.session_state:
-    st.session_state.historico = []
+    st.session_state.historico = carregar_historico()
 if "di_estado" not in st.session_state:
     st.session_state.di_estado = "neutro"
 if "ultimo_update" not in st.session_state:
@@ -426,10 +452,12 @@ with st.spinner("Atualizando dados de mercado..."):
         "spread_win":     scores["WIN"]["spread"],
     }
     # Evita duplicatas no mesmo minuto
+    entrada["data"] = datetime.now().strftime("%Y-%m-%d")
     if not st.session_state.historico or st.session_state.historico[-1]["hora"] != entrada["hora"]:
         st.session_state.historico.append(entrada)
         if len(st.session_state.historico) > 120:
             st.session_state.historico = st.session_state.historico[-120:]
+        salvar_historico(st.session_state.historico)
 
 # ─────────────────────────────────────────
 # SINAIS E SCORES
