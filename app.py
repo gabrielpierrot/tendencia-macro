@@ -357,6 +357,17 @@ with st.spinner("Atualizando dados de mercado..."):
     scores = calcular_scores(dados, di_juros)
     st.session_state.ultimo_update = datetime.now(BR_TZ).strftime("%H:%M:%S")
 
+    # Rastro do Macro = sinal independente baseado no diferencial de juros
+    # Normalizado: intensidade (-5 a +5) com sinal do diferencial
+    di_intensidade = di_juros["intensidade"]  # 0-5
+    di_sinal = di_juros["sinal"]
+    if di_sinal == "pessimista":
+        rastro = di_intensidade          # positivo = pessimismo domina = compra WDO
+    elif di_sinal == "otimista":
+        rastro = -di_intensidade         # negativo = otimismo domina = venda WDO
+    else:
+        rastro = 0.0
+
     entrada = {
         "hora":           datetime.now(BR_TZ).strftime("%H:%M"),
         "data":           datetime.now(BR_TZ).strftime("%Y-%m-%d"),
@@ -368,7 +379,13 @@ with st.spinner("Atualizando dados de mercado..."):
         "otimismo_win":   scores["WIN"]["otimismo"],
         "neutro_win":     scores["WIN"]["neutro"],
         "spread_win":     scores["WIN"]["spread"],
+        "rastro":         rastro,
     }
+
+    # Limpa histórico se formato antigo (sem coluna rastro)
+    if st.session_state.historico and "rastro" not in st.session_state.historico[0]:
+        st.session_state.historico = []
+
     if not st.session_state.historico or st.session_state.historico[-1]["hora"] != entrada["hora"]:
         st.session_state.historico.append(entrada)
         if len(st.session_state.historico) > 120:
@@ -509,8 +526,11 @@ if len(st.session_state.historico) >= 2:
         line=dict(color="#ff5050", width=2.5), fill="tozeroy", fillcolor="rgba(255,80,80,0.04)"))
     fig.add_trace(go.Scatter(x=horas, y=df[f"neutro_{suf}"], name="Neutro", mode="lines",
         line=dict(color="#555577", width=1, dash="dot")))
-    fig.add_trace(go.Scatter(x=horas, y=df[f"spread_{suf}"], name="Rastro do Macro", mode="lines+markers",
-        line=dict(color="#4488ff", width=2, dash="dash"), marker=dict(size=5, color="#4488ff")))
+    # Rastro do Macro: sinal independente do diferencial de juros
+    rastro_vals = df["rastro"].tolist() if "rastro" in df.columns else [0]*len(horas)
+    fig.add_trace(go.Scatter(x=horas, y=rastro_vals, name="Rastro do Macro (Juros)", mode="lines+markers",
+        line=dict(color="#4488ff", width=2.5), marker=dict(size=6, color="#4488ff",
+        symbol=["triangle-up" if v > 0 else ("triangle-down" if v < 0 else "circle") for v in rastro_vals])))
 
     fig.update_layout(
         paper_bgcolor="#0a0a0f", plot_bgcolor="#0d0d18",
