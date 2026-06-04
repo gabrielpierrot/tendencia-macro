@@ -8,7 +8,7 @@ import yfinance as yf
 import requests
 
 st.set_page_config(
-    page_title="Rastreador Macro | WDO & WIN",
+    page_title="Tendência Macro | WDO & WIN",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -354,7 +354,7 @@ def gerar_sinal(scores, threshold, ativo):
 # ─────────────────────────────────────────
 st.markdown("""
 <div class="main-header">
-    <h1>RASTREADOR MACRO</h1>
+    <h1>TENDÊNCIA MACRO</h1>
     <p>Mini Dólar · Mini Índice · Fatores Macro em Tempo Real</p>
 </div>
 """, unsafe_allow_html=True)
