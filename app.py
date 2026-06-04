@@ -584,14 +584,15 @@ for i, (chave, (nome, desc)) in enumerate(fatores_info.items()):
     d = dados.get(chave, {})
     var = d.get("var_pct", 0)
     classif = classificar_fator(var, chave)
-    cor = "#00ff78" if classif == "otimista" else ("#ff5050" if classif == "pessimista" else "#555577")
+    cor_var    = "#00ff78" if var > 0 else ("#ff5050" if var < 0 else "#555577")
+    cor_classif = "#00ff78" if classif == "otimista" else ("#ff5050" if classif == "pessimista" else "#555577")
     seta = "▲" if var > 0 else ("▼" if var < 0 else "—")
     with cols[i % 3]:
         st.markdown(f"""<div class="metric-card">
             <div class="metric-label">{nome}</div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.3rem">
-                <span style="font-family:'JetBrains Mono';font-size:1rem;color:{cor};font-weight:600">{seta} {var:+.2f}%</span>
-                <span style="font-size:0.65rem;color:{cor};font-family:'JetBrains Mono'">{classif.upper()}</span>
+                <span style="font-family:'JetBrains Mono';font-size:1rem;color:{cor_var};font-weight:600">{seta} {var:+.2f}%</span>
+                <span style="font-size:0.65rem;color:{cor_classif};font-family:'JetBrains Mono'">{classif.upper()}</span>
             </div>
             <div style="font-size:0.6rem;color:#333355;margin-top:0.15rem;font-family:'JetBrains Mono'">{desc}</div>
         </div>""", unsafe_allow_html=True)
