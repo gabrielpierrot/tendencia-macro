@@ -140,16 +140,39 @@ def buscar_dados_mercado():
 
 @st.cache_data(ttl=3600)
 def buscar_selic_bcb():
+    """
+    Busca a taxa Selic Meta anual via BCB.
+    Série 432 = Selic Meta (% a.a.) — valor já em formato anual (ex: 13.75)
+    Série 11  = Selic diária (% a.d.) — precisa converter: (1 + v/100)^252 - 1
+    """
+    # Tentativa 1: Selic Meta direta (série 432 = % a.a.)
+    try:
+        url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/5?formato=json"
+        r = requests.get(url, timeout=8)
+        if r.status_code == 200:
+            dados = r.json()
+            if dados:
+                valor = float(dados[-1]["valor"])
+                if valor > 1:  # já é anual (ex: 13.75)
+                    return valor
+    except:
+        pass
+
+    # Tentativa 2: Selic diária (série 11) convertida para anual
     try:
         url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados/ultimos/5?formato=json"
         r = requests.get(url, timeout=8)
         if r.status_code == 200:
             dados = r.json()
             if dados:
-                return float(dados[-1]["valor"])
+                taxa_diaria = float(dados[-1]["valor"]) / 100
+                taxa_anual = ((1 + taxa_diaria) ** 252 - 1) * 100
+                return round(taxa_anual, 2)
     except:
         pass
-    return None
+
+    # Fallback: valor hardcoded atualizado manualmente
+    return 13.75
 
 # ─────────────────────────────────────────
 # CLASSIFICAÇÃO DE FATORES
